@@ -5,8 +5,8 @@ REPOSITORY_ROOT_DIR="$(dirname "${SCRIPT_DIR}")"
 
 source "${REPOSITORY_ROOT_DIR}/env/dev"
 
-TEMPLATE_FILE=${KMS_TEMPLATE}
-STACK_NAME=${KMS_STACK_NAME}
+TEMPLATE_FILE=${S3_TEMPLATE}
+STACK_NAME=${S3_STACK_NAME}
 
 EXIST_CHECK=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query 'Stacks[].StackName | [0]' --output text)
 if [ "${EXIST_CHECK}" = "${STACK_NAME}" ]; then

@@ -22,6 +22,10 @@ ADMINISTRATOR_PASSWORD=uYz6o8deGgpC61CL
 KMS_TEMPLATE=kms.cfn.yml
 KMS_STACK_NAME=${ENV}-${PROJ}-kms
 
+## S3
+S3_TEMPLATE=s3.cfn.yml
+S3_STACK_NAME=${ENV}-${PROJ}-s3
+
 ## Cognito
 COGNITO_TEMPLATE=cognito.cfn.yml
 COGNITO_STACK_NAME=${ENV}-${PROJ}-cognito

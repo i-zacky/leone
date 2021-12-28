@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: S3
+
+Parameters:
+  Project:
+    Default: leone
+    Type: String
+    Description: Project Name
+  Env:
+    Default: dev
+    Type: String
+    Description: Environment Name
+
+Resources:
+  CloudFormationBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "cfn-templates-${AWS::Region}-${AWS::AccountId}"
+
+  LambdaFunctionsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${Env}-${Project}-lambda-functions"
+
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${Env}-${Project}-data"
+      CorsConfiguration:
+        CorsRules:
+          - Id: PreSignedURLRule
+            AllowedOrigins:
+              - '*'
+            AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+            MaxAge: 3600
+
+Outputs:
+  CloudFormationBucketName:
+    Value: !Ref CloudFormationBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-cfn-bucket-name"
+  CloudFormationBucketArn:
+    Value: !GetAtt CloudFormationBucket.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-cfn-bucket-arn"
+
+  LambdaFunctionsBucketName:
+    Value: !Ref LambdaFunctionsBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-lambda-functions-bucket-name"
+  LambdaFunctionsBucketArn:
+    Value: !GetAtt LambdaFunctionsBucket.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-lambda-functions-bucket-arn"
+
+  DataBucketName:
+    Value: !Ref DataBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-data-bucket-name"
+  DataBucketArn:
+    Value: !GetAtt DataBucket.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-data-bucket-arn"
