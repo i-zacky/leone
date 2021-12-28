@@ -1,0 +1,27 @@
+################################
+# dev
+################################
+
+################################
+# Region
+REGION=${AWS_DEFAULT_REGION}
+
+################################
+# Environment
+ENV=dev
+# Project
+PROJ=leone
+
+# Cognito
+ADMINISTRATOR_EMAIL=leone-admin@example.com
+ADMINISTRATOR_PASSWORD=uYz6o8deGgpC61CL
+
+################################
+# Template files and Stack Name
+## KMS
+KMS_TEMPLATE=kms.cfn.yml
+KMS_STACK_NAME=${ENV}-${PROJ}-kms
+
+## Cognito
+COGNITO_TEMPLATE=cognito.cfn.yml
+COGNITO_STACK_NAME=${ENV}-${PROJ}-cognito

@@ -1,0 +1,10 @@
+*.iws
+*.iml
+*.imr
+.idea/
+.DS_Store
+.vscode/
+*.key
+*.pub
+*.pem
+.envrc
