@@ -10,6 +10,12 @@ Parameters:
     Default: dev
     Type: String
     Description: Environment Name
+  LambdaFunctionsBucketName:
+    Type: String
+    Description: Lambda Functions Bucket Name
+  DataBucketName:
+    Type: String
+    Description: Data Bucket Name
 
 Resources:
   CloudFormationBucket:
@@ -20,12 +26,12 @@ Resources:
   LambdaFunctionsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${Env}-${Project}-lambda-functions"
+      BucketName: !Ref LambdaFunctionsBucketName
 
   DataBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${Env}-${Project}-data"
+      BucketName: !Ref DataBucketName
       CorsConfiguration:
         CorsRules:
           - Id: PreSignedURLRule

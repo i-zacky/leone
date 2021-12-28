@@ -12,6 +12,10 @@ ENV=dev
 # Project
 PROJ=leone
 
+# S3
+LAMBDA_FUNCTIONS_BUCKET_NAME=${ENV}-${PROJ}-lambda-functions
+DATA_BUCKET_NAME=${ENV}-${PROJ}-data
+
 # Cognito
 ADMINISTRATOR_EMAIL=leone-admin@example.com
 ADMINISTRATOR_PASSWORD=uYz6o8deGgpC61CL

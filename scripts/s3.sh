@@ -25,6 +25,8 @@ aws cloudformation ${METHOD} \
     --parameters \
       ParameterKey=Project,ParameterValue=${PROJ} \
       ParameterKey=Env,ParameterValue=${ENV} \
+      ParameterKey=LambdaFunctionsBucketName,ParameterValue=${LAMBDA_FUNCTIONS_BUCKET_NAME} \
+      ParameterKey=DataBucketName,ParameterValue=${DATA_BUCKET_NAME} \
     --tags \
       Key=Project,Value=${PROJ} \
       Key=Environment,Value=${ENV}
