@@ -19,6 +19,9 @@ DATA_BUCKET_NAME=${ENV}-${PROJ}-data
 # Cognito
 ADMINISTRATOR_EMAIL=leone-admin@example.com
 ADMINISTRATOR_PASSWORD=uYz6o8deGgpC61CL
+COGNITO_LAMBDA_S3_KEY=${ENV}-${PROJ}-cognito-lambda.zip
+COGNITO_LAMBDA_LAYER_S3_KEY=${ENV}-${PROJ}-cognito-lambda-layer.zip
+SENDGRID_API_KEY=
 
 ################################
 # Template files and Stack Name

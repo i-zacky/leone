@@ -25,7 +25,12 @@ aws cloudformation ${METHOD} \
     --parameters \
       ParameterKey=Project,ParameterValue=${PROJ} \
       ParameterKey=Env,ParameterValue=${ENV} \
+      ParameterKey=KMSStackName,ParameterValue=${KMS_STACK_NAME} \
       ParameterKey=AdministratorEmail,ParameterValue=${ADMINISTRATOR_EMAIL} \
+      ParameterKey=LambdaFunctionsBucketName,ParameterValue=${LAMBDA_FUNCTIONS_BUCKET_NAME} \
+      ParameterKey=CognitoLambdaS3Key,ParameterValue=${COGNITO_LAMBDA_S3_KEY} \
+      ParameterKey=CognitoLambdaLayerS3Key,ParameterValue=${COGNITO_LAMBDA_LAYER_S3_KEY} \
+      ParameterKey=SendGridAPIKey,ParameterValue=${SENDGRID_API_KEY} \
     --tags \
       Key=Project,Value=${PROJ} \
       Key=Environment,Value=${ENV}
@@ -49,10 +54,19 @@ done
 
 echo "Complete ${METHOD} ${STACK_NAME}"
 
-echo "Update administrator password. ${STACK_NAME}"
 USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" --query "Stacks[].Outputs[?ExportName==\`${STACK_NAME}-user-pool-id\`].[OutputValue]" --output text)
+
+echo "Update administrator password. ${STACK_NAME}"
 aws cognito-idp admin-set-user-password \
   --user-pool-id "${USER_POOL_ID}" \
   --username "${ADMINISTRATOR_EMAIL}" \
   --password "${ADMINISTRATOR_PASSWORD}" \
   --permanent
+
+echo "Update LambdaConfig for CustomEmailSender. ${STACK_NAME}"
+COGNITO_LAMBDA_ARN=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" --query "Stacks[].Outputs[?ExportName==\`${STACK_NAME}-lambda-arn\`].[OutputValue]" --output text)
+CMK_ARN=$(aws cloudformation describe-stacks --stack-name "${KMS_STACK_NAME}" --query "Stacks[].Outputs[?ExportName==\`${KMS_STACK_NAME}-cmk-arn\`].[OutputValue]" --output text)
+aws cognito-idp update-user-pool \
+  --user-pool-id "${USER_POOL_ID}" \
+  --auto-verified-attributes email \
+  --lambda-config "CustomEmailSender={LambdaVersion=V1_0,LambdaArn=${COGNITO_LAMBDA_ARN}},KMSKeyID=${CMK_ARN}"
