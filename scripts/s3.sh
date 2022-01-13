@@ -21,5 +21,4 @@ sam deploy \
   --parameter-overrides \
       Project=${PROJ} \
       Env=${ENV} \
-      LambdaFunctionsBucketName=${LAMBDA_FUNCTIONS_BUCKET_NAME} \
       DataBucketName=${DATA_BUCKET_NAME}

@@ -11,25 +11,11 @@ Parameters:
     Type: String
     Description: Environment Name
 
-  LambdaFunctionsBucketName:
-    Type: String
-    Description: Lambda Functions Bucket Name
   DataBucketName:
     Type: String
     Description: Data Bucket Name
 
 Resources:
-  LambdaFunctionsBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Ref LambdaFunctionsBucketName
-      AccessControl: Private
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: True
-        BlockPublicPolicy: True
-        IgnorePublicAcls: True
-        RestrictPublicBuckets: True
-
   DataBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -52,15 +38,6 @@ Resources:
             MaxAge: 3600
 
 Outputs:
-  LambdaFunctionsBucketName:
-    Value: !Ref LambdaFunctionsBucket
-    Export:
-      Name: !Sub "${AWS::StackName}-lambda-functions-bucket-name"
-  LambdaFunctionsBucketArn:
-    Value: !GetAtt LambdaFunctionsBucket.Arn
-    Export:
-      Name: !Sub "${AWS::StackName}-lambda-functions-bucket-arn"
-
   DataBucketName:
     Value: !Ref DataBucket
     Export:
