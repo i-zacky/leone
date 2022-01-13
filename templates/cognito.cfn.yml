@@ -10,24 +10,10 @@ Parameters:
     Default: dev
     Type: String
     Description: Environment Name
-  KMSStackName:
-    Type: String
-    Description: Stack Name of KMS
+
   AdministratorEmail:
     Type: String
     Description: Administrator User Email
-  LambdaFunctionsBucketName:
-    Type: String
-    Description: Lambda Functions Bucket Name
-  CognitoLambdaS3Key:
-    Type: String
-    Description: Lambda Function S3 Key
-  CognitoLambdaLayerS3Key:
-    Type: String
-    Description: Lambda Function Layer S3 Key
-  SendGridAPIKey:
-    Type: String
-    Description: SendGrid API Key
 
 Resources:
   UserPool:
@@ -91,87 +77,6 @@ Resources:
       Username: !Ref AdministratorEmail
       UserPoolId: !Ref UserPool
 
-  LambdaLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${Env}-${Project}-cognito-lambda"
-
-  LambdaExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${Env}-${Project}-cognito-lambda-role"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: "/service-role/"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: kms
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: kms:Decrypt
-                Resource:
-                  Fn::ImportValue: !Sub "${KMSStackName}-cmk-arn"
-
-  LambdaLayerVersion:
-    Type: AWS::Lambda::LayerVersion
-    Properties:
-      LayerName: !Sub "${Env}-${Project}-cognito-lambda-layer"
-      Description: !Sub "${Env}-${Project}-cognito-lambda-layer"
-      CompatibleArchitectures:
-        - x86_64
-      CompatibleRuntimes:
-        - nodejs14.x
-      Content:
-        S3Bucket: !Ref LambdaFunctionsBucketName
-        S3Key: !Ref CognitoLambdaLayerS3Key
-
-  LambdaLayerPermission:
-    Type: AWS::Lambda::LayerVersionPermission
-    Properties:
-      Action: lambda:GetLayerVersion
-      LayerVersionArn: !Ref LambdaLayerVersion
-      Principal: !Ref AWS::AccountId
-
-  LambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub "${Env}-${Project}-cognito-lambda"
-      Description:  !Sub "${Env}-${Project}-cognito-lambda"
-      Code:
-        S3Bucket: !Ref LambdaFunctionsBucketName
-        S3Key: !Ref CognitoLambdaS3Key
-      Handler: index.handler
-      Runtime: nodejs14.x
-      PackageType: Zip
-      Layers:
-        - !Ref LambdaLayerVersion
-      Role: !GetAtt LambdaExecutionRole.Arn
-      Environment:
-        Variables:
-          KEY_ID:
-            Fn::ImportValue: !Sub "${KMSStackName}-cmk-arn"
-          KEY_ALIAS:
-            Fn::ImportValue: !Sub "${KMSStackName}-cmk-alias-arn"
-          SENDGRID_API_KEY: !Ref SendGridAPIKey
-
-  LambdaFunctionInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:invokeFunction
-      Principal: cognito-idp.amazonaws.com
-      FunctionName: !GetAtt LambdaFunction.Arn
-      SourceArn: !GetAtt UserPool.Arn
-
 Outputs:
   UserPoolId:
     Value: !Ref UserPool
@@ -186,18 +91,3 @@ Outputs:
     Value: !Ref UserPoolClient
     Export:
       Name: !Sub "${AWS::StackName}-user-pool-client-id"
-
-  LambdaExecutionRoleArn:
-    Value: !GetAtt LambdaExecutionRole.Arn
-    Export:
-      Name: !Sub "${AWS::StackName}-lambda-role-arn"
-
-  LambdaLayerVersionArn:
-    Value: !Ref LambdaLayerVersion
-    Export:
-      Name: !Sub "${AWS::StackName}-lambda-layer-version-arn"
-
-  LambdaFunctionArn:
-    Value: !GetAtt LambdaFunction.Arn
-    Export:
-      Name: !Sub "${AWS::StackName}-lambda-arn"

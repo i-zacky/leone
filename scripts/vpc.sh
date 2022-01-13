@@ -3,54 +3,28 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE:-0}")" && pwd)"
 REPOSITORY_ROOT_DIR="$(dirname "${SCRIPT_DIR}")"
 
-source "${REPOSITORY_ROOT_DIR}/env/dev"
+source "${REPOSITORY_ROOT_DIR}/env/$1"
 
 TEMPLATE_FILE=${VPC_TEMPLATE}
 STACK_NAME=${VPC_STACK_NAME}
 
-EXIST_CHECK=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query 'Stacks[].StackName | [0]' --output text)
-if [ "${EXIST_CHECK}" = "${STACK_NAME}" ]; then
-  METHOD=update-stack
-else
-  METHOD=create-stack
-fi
-
-# create or update stack
-echo "${METHOD} ${STACK_NAME}"
-aws cloudformation ${METHOD} \
-    --stack-name "${STACK_NAME}" \
-    --template-body "file://${REPOSITORY_ROOT_DIR}/templates/${TEMPLATE_FILE}" \
-    --region "${REGION}" \
-    --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-    --parameters \
-      ParameterKey=Project,ParameterValue=${PROJ} \
-      ParameterKey=Env,ParameterValue=${ENV} \
-      ParameterKey=CIDR,ParameterValue=${CIDR} \
-      ParameterKey=PublicSubnetCIDRA,ParameterValue=${PUBLIC_SUBNET_CIDR_A} \
-      ParameterKey=PublicSubnetCIDRC,ParameterValue=${PUBLIC_SUBNET_CIDR_C} \
-      ParameterKey=PublicSubnetCIDRD,ParameterValue=${PUBLIC_SUBNET_CIDR_D} \
-      ParameterKey=PrivateSubnetCIDRA,ParameterValue=${PRIVATE_SUBNET_CIDR_A} \
-      ParameterKey=PrivateSubnetCIDRC,ParameterValue=${PRIVATE_SUBNET_CIDR_C} \
-      ParameterKey=PrivateSubnetCIDRD,ParameterValue=${PRIVATE_SUBNET_CIDR_D} \
-    --tags \
-      Key=Project,Value=${PROJ} \
-      Key=Environment,Value=${ENV}
-
-# wait create or update stack complete
-SUCCESS=('CREATE_COMPLETE' 'UPDATE_COMPLETE')
-FAILED=('ROLLBACK_COMPLETE' 'UPDATE_ROLLBACK_COMPLETE' 'ROLLBACK_FAILED' 'UPDATE_ROLLBACK_FAILED' 'ROLLBACK_IN_PROGRESS' 'UPDATE_ROLLBACK_IN_PROGRESS')
-for i in {1..90}
-do
-  STATE=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --region ${REGION} --query 'Stacks[].StackStatus' --output text)
-  if printf '%s\n' "${SUCCESS[@]}" | grep -qx "${STATE}" > /dev/null >&2; then
-    break
-  fi
-  if printf '%s\n' "${FAILED[@]}" | grep -qx "${STATE}" > /dev/null >&2; then
-    echo "Rollback stack ${STACK_NAME}"
-    exit 1
-  fi
-  echo "wait 20 sec..."
-  sleep 20
-done
-
-echo "Complete ${METHOD} ${STACK_NAME}"
+sam deploy \
+  --region "${REGION}" \
+  --template "${REPOSITORY_ROOT_DIR}/templates/${TEMPLATE_FILE}" \
+  --stack-name "${STACK_NAME}" \
+  --s3-bucket "${CF_TEMPLATE_BUCKET}" \
+  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+  --no-fail-on-empty-changeset \
+  --tags \
+      Env="${ENV}" \
+      Project="${PROJ}" \
+  --parameter-overrides \
+      Project=${PROJ} \
+      Env=${ENV} \
+      CIDR=${CIDR} \
+      PublicSubnetCIDRA=${PUBLIC_SUBNET_CIDR_A} \
+      PublicSubnetCIDRC=${PUBLIC_SUBNET_CIDR_C} \
+      PublicSubnetCIDRD=${PUBLIC_SUBNET_CIDR_D} \
+      PrivateSubnetCIDRA=${PRIVATE_SUBNET_CIDR_A} \
+      PrivateSubnetCIDRC=${PRIVATE_SUBNET_CIDR_C} \
+      PrivateSubnetCIDRD=${PRIVATE_SUBNET_CIDR_D}

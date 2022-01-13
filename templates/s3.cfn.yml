@@ -10,6 +10,7 @@ Parameters:
     Default: dev
     Type: String
     Description: Environment Name
+
   LambdaFunctionsBucketName:
     Type: String
     Description: Lambda Functions Bucket Name
@@ -18,20 +19,27 @@ Parameters:
     Description: Data Bucket Name
 
 Resources:
-  CloudFormationBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub "cfn-templates-${AWS::Region}-${AWS::AccountId}"
-
   LambdaFunctionsBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref LambdaFunctionsBucketName
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
 
   DataBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref DataBucketName
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
       CorsConfiguration:
         CorsRules:
           - Id: PreSignedURLRule
@@ -44,15 +52,6 @@ Resources:
             MaxAge: 3600
 
 Outputs:
-  CloudFormationBucketName:
-    Value: !Ref CloudFormationBucket
-    Export:
-      Name: !Sub "${AWS::StackName}-cfn-bucket-name"
-  CloudFormationBucketArn:
-    Value: !GetAtt CloudFormationBucket.Arn
-    Export:
-      Name: !Sub "${AWS::StackName}-cfn-bucket-arn"
-
   LambdaFunctionsBucketName:
     Value: !Ref LambdaFunctionsBucket
     Export:

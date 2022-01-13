@@ -5,8 +5,8 @@ REPOSITORY_ROOT_DIR="$(dirname "${SCRIPT_DIR}")"
 
 source "${REPOSITORY_ROOT_DIR}/env/$1"
 
-TEMPLATE_FILE=${S3_TEMPLATE}
-STACK_NAME=${S3_STACK_NAME}
+TEMPLATE_FILE=${SG_TEMPLATE}
+STACK_NAME=${SG_STACK_NAME}
 
 sam deploy \
   --region "${REGION}" \
@@ -21,5 +21,10 @@ sam deploy \
   --parameter-overrides \
       Project=${PROJ} \
       Env=${ENV} \
-      LambdaFunctionsBucketName=${LAMBDA_FUNCTIONS_BUCKET_NAME} \
-      DataBucketName=${DATA_BUCKET_NAME}
+      VPCStackName=${VPC_STACK_NAME} \
+      PublicSubnetCIDRA=${PUBLIC_SUBNET_CIDR_A} \
+      PublicSubnetCIDRC=${PUBLIC_SUBNET_CIDR_C} \
+      PublicSubnetCIDRD=${PUBLIC_SUBNET_CIDR_D} \
+      PrivateSubnetCIDRA=${PRIVATE_SUBNET_CIDR_A} \
+      PrivateSubnetCIDRC=${PRIVATE_SUBNET_CIDR_C} \
+      PrivateSubnetCIDRD=${PRIVATE_SUBNET_CIDR_D}
