@@ -30,6 +30,11 @@ DATA_BUCKET_NAME=${ENV}-${PROJ}-data
 ADMINISTRATOR_EMAIL=leone-admin@example.com
 ADMINISTRATOR_PASSWORD=uYz6o8deGgpC61CL
 
+# RDS
+DATABASE_NAME=${ENV}_${PROJ}_db
+DATABASE_UER=postgresql
+DATABASE_PASSWORD=paJydVmA3z7vqEkr
+
 ################################
 # Template files and Stack Name
 ## VPC
@@ -55,3 +60,7 @@ COGNITO_STACK_NAME=${ENV}-${PROJ}-cognito
 ## ECR
 ECR_TEMPLATE=ecr.cfn.yml
 ECR_STACK_NAME=${ENV}-${PROJ}-ecr
+
+## RDS
+RDS_TEMPLATE=rds.cfn.yml
+RDS_STACK_NAME=${ENV}-${PROJ}-rds
