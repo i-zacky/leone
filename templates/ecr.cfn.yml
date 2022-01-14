@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: ECR
+
+Parameters:
+  Project:
+    Default: leone
+    Type: String
+    Description: Project Name
+  Env:
+    Default: dev
+    Type: String
+    Description: Environment Name
+
+Resources:
+  ApiRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${Env}-${Project}-api"
+      ImageTagMutability: IMMUTABLE
+      Tags:
+        - Key: Env
+          Value: !Ref Env
+        - Key: Project
+          Value: !Ref Project
+
+  WebRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${Env}-${Project}-web"
+      ImageTagMutability: IMMUTABLE
+      Tags:
+        - Key: Env
+          Value: !Ref Env
+        - Key: Project
+          Value: !Ref Project
+
+  BatchRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${Env}-${Project}-batch"
+      ImageTagMutability: IMMUTABLE
+      Tags:
+        - Key: Env
+          Value: !Ref Env
+        - Key: Project
+          Value: !Ref Project
+
+Outputs:
+  ApiRepositoryArn:
+    Value: !GetAtt ApiRepository.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-api-repository-arn"
+  ApiRepositoryUri:
+    Value: !GetAtt ApiRepository.RepositoryUri
+    Export:
+      Name: !Sub "${AWS::StackName}-api-repository-uri"
+
+  WebRepositoryArn:
+    Value: !GetAtt WebRepository.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-web-repository-arn"
+  WebRepositoryUri:
+    Value: !GetAtt WebRepository.RepositoryUri
+    Export:
+      Name: !Sub "${AWS::StackName}-web-repository-uri"
+
+  BatchRepositoryArn:
+    Value: !GetAtt BatchRepository.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-batch-repository-arn"
+  BatchRepositoryUri:
+    Value: !GetAtt BatchRepository.RepositoryUri
+    Export:
+      Name: !Sub "${AWS::StackName}-batch-repository-uri"

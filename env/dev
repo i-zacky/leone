@@ -51,3 +51,7 @@ S3_STACK_NAME=${ENV}-${PROJ}-s3
 ## Cognito
 COGNITO_TEMPLATE=cognito.cfn.yml
 COGNITO_STACK_NAME=${ENV}-${PROJ}-cognito
+
+## ECR
+ECR_TEMPLATE=ecr.cfn.yml
+ECR_STACK_NAME=${ENV}-${PROJ}-ecr
