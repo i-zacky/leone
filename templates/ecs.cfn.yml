@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: ECS Base
+
+Parameters:
+  Project:
+    Default: leone
+    Type: String
+    Description: Project Name
+  Env:
+    Default: dev
+    Type: String
+    Description: Environment Name
+
+  S3StackName:
+    Type: String
+    Description: Stack Name of S3
+  CognitoStackName:
+    Type: String
+    Description: Stack Name of Cognito
+
+Resources:
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${Env}-${Project}-cluster"
+
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Env}-${Project}-ecs-task-exec-role"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Env}-${Project}-ecs-task-role"
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: s3:*
+                Resource:
+                  - Fn::ImportValue: !Sub "${S3StackName}-data-bucket-arn"
+                  - !Sub
+                    - "${DataBucketArn}/*"
+                    - DataBucketArn:
+                        Fn::ImportValue: !Sub "${S3StackName}-data-bucket-arn"
+        - PolicyName: Cognito
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cognito-idp:*
+                Resource:
+                  Fn::ImportValue: !Sub "${CognitoStackName}-user-pool-arn"
+
+Outputs:
+  ECSClusterName:
+    Value: !Ref ECSCluster
+    Export:
+      Name: !Sub "${AWS::StackName}-cluster-name"
+  ECSClusterArn:
+    Value: !GetAtt ECSCluster.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-cluster-arn"
+
+  ECSTaskExecutionRoleId:
+    Value: !GetAtt ECSTaskExecutionRole.RoleId
+    Export:
+      Name: !Sub "${AWS::StackName}-task-exec-role-id"
+  ECSTaskExecutionRoleArn:
+    Value: !GetAtt ECSTaskExecutionRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-task-exec-role-arn"
+
+  ECSTaskRoleId:
+    Value: !GetAtt ECSTaskRole.RoleId
+    Export:
+      Name: !Sub "${AWS::StackName}-task-role-id"
+  ECSTaskRoleArn:
+    Value: !GetAtt ECSTaskRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-task-role-arn"

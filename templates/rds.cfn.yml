@@ -45,6 +45,9 @@ Mappings:
     prod:
       InstanceClass: db.t3.medium
 
+Conditions:
+  IsNotDev: !Not [!Equals [!Ref Env, "dev"]]
+
 Resources:
   AuroraSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -75,6 +78,9 @@ Resources:
 
   AuroraCluster:
     Type: AWS::RDS::DBCluster
+    DependsOn:
+      - AuroraSubnetGroup
+      - AuroraClusterParameterGroup
     Properties:
       DBClusterIdentifier: !Sub "${Env}-${Project}-cluster"
       DBClusterParameterGroupName: !Ref AuroraClusterParameterGroup
@@ -95,6 +101,10 @@ Resources:
 
   AuroraInstanceA01:
     Type: AWS::RDS::DBInstance
+    DependsOn:
+      - AuroraCluster
+      - AuroraSubnetGroup
+      - AuroraDBParameterGroup
     Properties:
       AvailabilityZone: !Sub "${AWS::Region}a"
       AllowMajorVersionUpgrade: false
@@ -113,6 +123,11 @@ Resources:
 
   AuroraInstanceC01:
     Type: AWS::RDS::DBInstance
+    Condition: IsNotDev
+    DependsOn:
+      - AuroraCluster
+      - AuroraSubnetGroup
+      - AuroraDBParameterGroup
     Properties:
       AvailabilityZone: !Sub "${AWS::Region}c"
       AllowMajorVersionUpgrade: false
@@ -131,6 +146,11 @@ Resources:
 
   AuroraInstanceD01:
     Type: AWS::RDS::DBInstance
+    Condition: IsNotDev
+    DependsOn:
+      - AuroraCluster
+      - AuroraSubnetGroup
+      - AuroraDBParameterGroup
     Properties:
       AvailabilityZone: !Sub "${AWS::Region}d"
       AllowMajorVersionUpgrade: false
@@ -214,35 +234,43 @@ Outputs:
       Name: !Sub "${AWS::StackName}-db-a01-endpoint-port"
 
   AuroraInstanceC01Id:
+    Condition: IsNotDev
     Value: !Ref AuroraInstanceC01
     Export:
       Name: !Sub "${AWS::StackName}-db-c01-id"
   AuroraInstanceC01Arn:
+    Condition: IsNotDev
     Value: !Sub "arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:${AuroraInstanceC01}"
     Export:
       Name: !Sub "${AWS::StackName}-db-c01-arn"
   AuroraInstanceC01EndpointURL:
+    Condition: IsNotDev
     Value: !GetAtt AuroraInstanceC01.Endpoint.Address
     Export:
       Name: !Sub "${AWS::StackName}-db-c01-endpoint-url"
   AuroraInstanceC01EndpointPort:
+    Condition: IsNotDev
     Value: !GetAtt AuroraInstanceC01.Endpoint.Port
     Export:
       Name: !Sub "${AWS::StackName}-db-c01-endpoint-port"
 
   AuroraInstanceD01Id:
+    Condition: IsNotDev
     Value: !Ref AuroraInstanceD01
     Export:
       Name: !Sub "${AWS::StackName}-db-d01-id"
   AuroraInstanceD01Arn:
+    Condition: IsNotDev
     Value: !Sub "arn:aws:rds:${AWS::Region}:${AWS::AccountId}:db:${AuroraInstanceD01}"
     Export:
       Name: !Sub "${AWS::StackName}-db-d01-arn"
   AuroraInstanceD01EndpointURL:
+    Condition: IsNotDev
     Value: !GetAtt AuroraInstanceD01.Endpoint.Address
     Export:
       Name: !Sub "${AWS::StackName}-db-d01-endpoint-url"
   AuroraInstanceD01EndpointPort:
+    Condition: IsNotDev
     Value: !GetAtt AuroraInstanceD01.Endpoint.Port
     Export:
       Name: !Sub "${AWS::StackName}-db-d01-endpoint-port"

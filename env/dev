@@ -35,6 +35,12 @@ DATABASE_NAME=${ENV}_${PROJ}_db
 DATABASE_UER=postgresql
 DATABASE_PASSWORD=paJydVmA3z7vqEkr
 
+# ACM
+DOMAIN_NAME=${ENV}-${PROJ}.link
+
+# ECS
+WEB_DOCKER_IMAGE_TAG=v20210115_1
+
 ################################
 # Template files and Stack Name
 ## VPC
@@ -64,3 +70,13 @@ ECR_STACK_NAME=${ENV}-${PROJ}-ecr
 ## RDS
 RDS_TEMPLATE=rds.cfn.yml
 RDS_STACK_NAME=${ENV}-${PROJ}-rds
+
+## ACM
+ACM_TEMPLATE=acm.cfn.yml
+ACM_STACK_NAME=${ENV}-${PROJ}-acm
+
+## ECS
+ECS_TEMPLATE=ecs.cfn.yml
+ECS_STACK_NAME=${ENV}-${PROJ}-ecs
+ECS_WEB_TEMPLATE=web.cfn.yml
+ECS_WEB_STACK_NAME=${ENV}-${PROJ}-web

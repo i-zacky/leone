@@ -372,15 +372,15 @@ Outputs:
   PublicRouteTableA:
     Value: !Ref PublicRouteTableA
     Export:
-      Name: !Sub "${AWS::StackName}-external-rt-a-id"
+      Name: !Sub "${AWS::StackName}-public-rt-a-id"
   PublicRouteTableC:
     Value: !Ref PublicRouteTableC
     Export:
-      Name: !Sub "${AWS::StackName}-external-rt-c-id"
+      Name: !Sub "${AWS::StackName}-public-rt-c-id"
   PublicRouteTableD:
     Value: !Ref PublicRouteTableD
     Export:
-      Name: !Sub "${AWS::StackName}-external-rt-d-id"
+      Name: !Sub "${AWS::StackName}-public-rt-d-id"
 
   PrivateSubnetAId:
     Value: !Ref PrivateSubnetA

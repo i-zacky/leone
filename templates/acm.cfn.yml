@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: ACM
+
+Parameters:
+  Project:
+    Default: leone
+    Type: String
+    Description: Project Name
+  Env:
+    Default: dev
+    Type: String
+    Description: Environment Name
+
+  HostedZoneId:
+    Type: String
+    Description: Hosted Zone Id
+  DomainName:
+    Type: String
+    Description: Domain Name
+
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+      SubjectAlternativeNames:
+        - !Sub "*.${DomainName}"
+      ValidationMethod: DNS
+
+Outputs:
+  CertificateArn:
+    Value: !Ref Certificate
+    Export:
+      Name: !Sub "${AWS::StackName}-certificate-arn"
