@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Web Service of ECS on Fargate
+Description: API Service of ECS on Fargate
 
 Parameters:
   Project:
@@ -26,6 +26,15 @@ Parameters:
   ACMStackName:
     Type: String
     Description: Stack Name of ACM
+  S3StackName:
+    Type: String
+    Description: Stack Name of S3
+  RDSStackName:
+    Type: String
+    Description: Stack Name of RDS
+  CognitoStackName:
+    Type: String
+    Description: Stack Name of Cognito
 
   DomainName:
     Type: String
@@ -44,16 +53,28 @@ Parameters:
     Type: String
     Description: Memory Size of ECS Task
 
+  AllowOrigin:
+    Type: String
+    Description: ALLOW_ORIGIN
+  ClockFixed:
+    Type: String
+    Description: CLOCK_FIXED
+
+Mappings:
+  TaskDefinition:
+    ap-northeast-1:
+      Timezone: Asia/Tokyo
+
 Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/fargate/${Env}-${Project}-web"
+      LogGroupName: !Sub "/fargate/${Env}-${Project}-api"
 
   ECSTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: !Sub "${Env}-${Project}-web-task"
+      Family: !Sub "${Env}-${Project}-api-task"
       RequiresCompatibilities:
         - FARGATE
       Cpu: !Ref TaskCPU
@@ -64,27 +85,66 @@ Resources:
       ExecutionRoleArn:
         Fn::ImportValue: !Sub "${ECSStackName}-task-exec-role-arn"
       ContainerDefinitions:
-        - Name: !Sub "${Env}-${Project}-web-container"
+        - Name: !Sub "${Env}-${Project}-api-container"
           Image: !Sub
             - "${RepositoryURL}:${DockerImageTag}"
             - RepositoryURL:
-                Fn::ImportValue: !Sub "${ECRStackName}-web-repository-uri"
+                Fn::ImportValue: !Sub "${ECRStackName}-api-repository-uri"
               DockerImageTag: !Ref DockerImageTag
           PortMappings:
-            - HostPort: 80
-              ContainerPort: 80
+            - HostPort: 8080
+              ContainerPort: 8080
               Protocol: tcp
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-region: !Ref AWS::Region
               awslogs-group: !Ref LogGroup
-              awslogs-stream-prefix: !Sub "${Env}-${Project}-web"
+              awslogs-stream-prefix: !Sub "${Env}-${Project}-api"
+          Environment:
+            - Name: JAVA_OPTS
+              Value: !Sub "-Dspring.profiles.active=${Env}"
+            - Name: ALLOW_ORIGIN
+              Value: !Ref AllowOrigin
+            - Name: DB_JDBC_DRIVER
+              Value: "org.postgresql.Driver"
+            - Name: DB_JDBC_URL
+              Value: !Sub
+                - "jdbc:postgresql://${Host}:${Port}/${Database}"
+                - Host:
+                    Fn::ImportValue: !Sub "${RDSStackName}-aurora-endpoint-url"
+                  Port:
+                    Fn::ImportValue: !Sub "${RDSStackName}-aurora-endpoint-port"
+                  Database:
+                    Fn::ImportValue: !Sub "${RDSStackName}-database-name"
+            - Name: DB_USER
+              Value:
+                Fn::ImportValue: !Sub "${RDSStackName}-database-user"
+            - Name: DB_PASSWORD
+              Value:
+                Fn::ImportValue: !Sub "${RDSStackName}-database-password"
+            - Name: CLOCK_FIXED
+              Value: !Ref ClockFixed
+            - Name: CLOCK_TIME_ZONE
+              Value: !FindInMap [TaskDefinition, !Ref AWS::Region, Timezone]
+            - Name: AWS_DEFAULT_REGION
+              Value: !Ref AWS::Region
+            - Name: S3_ENDPOINT_URL
+              Value: !Sub "https://s3.${AWS::Region}.amazonaws.com"
+            - Name: S3_DATA_BUCKET
+              Value:
+                Fn::ImportValue: !Sub "${S3StackName}-data-bucket-name"
+            - Name: COGNITO_USER_POOL_ID
+              Value:
+                Fn::ImportValue: !Sub "${CognitoStackName}-user-pool-id"
+            - Name: COGNITO_CLIENT_ID
+              Value:
+                Fn::ImportValue: !Sub "${CognitoStackName}-user-pool-client-id"
 
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub "${Env}-${Project}-web-alb"
+      Name: !Sub "${Env}-${Project}-api-alb"
       IpAddressType: ipv4
       Scheme: internet-facing
       Type: application
@@ -96,12 +156,12 @@ Resources:
         - Fn::ImportValue: !Sub "${SGStackName}-public-sg-id"
       Tags:
         - Key: Name
-          Value: !Sub "${Env}-${Project}-web-alb"
+          Value: !Sub "${Env}-${Project}-api-alb"
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub "${Env}-${Project}-web-tg"
+      Name: !Sub "${Env}-${Project}-api-tg"
       VpcId:
         Fn::ImportValue: !Sub "${VPCStackName}-id"
       Protocol: HTTP
@@ -109,7 +169,7 @@ Resources:
       TargetType: ip
       Matcher:
         HttpCode: 200
-      HealthCheckPath: /health
+      HealthCheckPath: /actuator/health
       HealthCheckIntervalSeconds: 30
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 5
@@ -120,7 +180,7 @@ Resources:
           Value: 300
       Tags:
         - Key: Name
-          Value: !Sub "${Env}-${Project}-web-tg"
+          Value: !Sub "${Env}-${Project}-api-tg"
 
   LoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -159,19 +219,19 @@ Resources:
     Properties:
       Cluster:
         Fn::ImportValue: !Sub "${ECSStackName}-cluster-arn"
-      ServiceName: !Sub "${Env}-${Project}-web-service"
+      ServiceName: !Sub "${Env}-${Project}-api-service"
       DesiredCount: 1
       LaunchType: FARGATE
       TaskDefinition: !Ref ECSTaskDefinition
       LoadBalancers:
-        - ContainerName: !Sub "${Env}-${Project}-web-container"
-          ContainerPort: 80
+        - ContainerName: !Sub "${Env}-${Project}-api-container"
+          ContainerPort: 8080
           TargetGroupArn: !Ref TargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           SecurityGroups:
-            - Fn::ImportValue: !Sub "${SGStackName}-ecs-web-sg-id"
+            - Fn::ImportValue: !Sub "${SGStackName}-ecs-api-sg-id"
           Subnets:
             - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-a-id"
             - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-c-id"

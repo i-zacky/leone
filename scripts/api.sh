@@ -14,8 +14,8 @@ fi
 
 source "${REPOSITORY_ROOT_DIR}/env/$2"
 
-TEMPLATE_FILE=${ECS_WEB_TEMPLATE}
-STACK_NAME=${ECS_WEB_STACK_NAME}
+TEMPLATE_FILE=${ECS_API_TEMPLATE}
+STACK_NAME=${ECS_API_STACK_NAME}
 
 if [ "delete" = "$1" ]; then
   sam delete \
@@ -42,11 +42,16 @@ elif [ "deploy" = "$1" ]; then
         ECRStackName=${ECR_STACK_NAME} \
         ECSStackName=${ECS_STACK_NAME} \
         ACMStackName=${ACM_STACK_NAME} \
-        DomainName=${DOMAIN_NAME} \
+        S3StackName=${S3_STACK_NAME} \
+        RDSStackName=${RDS_STACK_NAME} \
+        CognitoStackName=${COGNITO_STACK_NAME} \
+        DomainName=${API_DOMAIN_NAME} \
         HostedZoneId=${HOSTED_ZONE_ID} \
-        DockerImageTag=${WEB_DOCKER_IMAGE_TAG} \
-        TaskCPU=${WEB_TASK_CPU} \
-        TaskMemory=${WEB_TASK_MEMORY}
+        DockerImageTag=${API_DOCKER_IMAGE_TAG} \
+        TaskCPU=${API_TASK_CPU} \
+        TaskMemory=${API_TASK_MEMORY} \
+        AllowOrigin=${ALLOW_ORIGIN} \
+        ClockFixed=${CLOCK_FIXED}
 else
   echo "[ERROR] unknown action command"
   exit 1
