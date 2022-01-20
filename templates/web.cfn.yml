@@ -43,6 +43,12 @@ Parameters:
   TaskMemory:
     Type: String
     Description: Memory Size of ECS Task
+  TaskMinCapacity:
+    Type: String
+    Description: Service Minumn Process Capacity
+  TaskMaxCapacity:
+    Type: String
+    Description: Service Maximum Process Capacity
 
 Resources:
   LogGroup:
@@ -100,6 +106,8 @@ Resources:
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn:
+      - ApplicationLoadBalancer
     Properties:
       Name: !Sub "${Env}-${Project}-web-tg"
       VpcId:
@@ -109,8 +117,8 @@ Resources:
       TargetType: ip
       Matcher:
         HttpCode: 200
-      HealthCheckPath: /health
-      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 20
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 5
@@ -155,12 +163,13 @@ Resources:
     Type: AWS::ECS::Service
     DependsOn:
       - ApplicationLoadBalancer
+      - LoadBalancerListener
       - ECSTaskDefinition
     Properties:
       Cluster:
         Fn::ImportValue: !Sub "${ECSStackName}-cluster-arn"
       ServiceName: !Sub "${Env}-${Project}-web-service"
-      DesiredCount: 1
+      DesiredCount: !Ref TaskMinCapacity
       LaunchType: FARGATE
       TaskDefinition: !Ref ECSTaskDefinition
       LoadBalancers:
@@ -176,6 +185,105 @@ Resources:
             - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-a-id"
             - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-c-id"
             - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-d-id"
+
+  AutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    DependsOn:
+      - ECSService
+    Properties:
+      MinCapacity: !Ref TaskMinCapacity
+      MaxCapacity: !Ref TaskMaxCapacity
+      ServiceNamespace: ecs
+      ResourceId: !Sub
+        - "service/${ClusterName}/${ServiceName}"
+        - ClusterName:
+            Fn::ImportValue: !Sub "${ECSStackName}-cluster-name"
+          ServiceName: !GetAtt ECSService.Name
+      RoleARN:
+        Fn::ImportValue: !Sub "${ECSStackName}-svc-as-role-arn"
+      ScalableDimension: ecs:service:DesiredCount
+
+  ScaleOutPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    DependsOn:
+      - AutoScalingTarget
+    Properties:
+      PolicyName: !Sub "${Env}-${Project}-svc-scale-out-policy"
+      PolicyType: StepScaling
+      ServiceNamespace: ecs
+      ScalingTargetId: !Ref AutoScalingTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+          - ScalingAdjustment: 1
+            MetricIntervalLowerBound: 0
+
+  ScaleOutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    DependsOn:
+      - ECSService
+      - ScaleOutPolicy
+    Properties:
+      AlarmDescription: Alarm to add capacity if CPU is high
+      EvaluationPeriods: 3
+      Statistic: Average
+      TreatMissingData: notBreaching
+      Period: 60
+      Threshold: 50
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref ScaleOutPolicy
+      Namespace: AWS/ECS
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: ClusterName
+          Value:
+            Fn::ImportValue: !Sub "${ECSStackName}-cluster-name"
+        - Name: ServiceName
+          Value: !GetAtt ECSService.Name
+
+  ScaleInPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    DependsOn:
+      - AutoScalingTarget
+    Properties:
+      PolicyName: !Sub "${Env}-${Project}-svc-scale-in-policy"
+      PolicyType: StepScaling
+      ServiceNamespace: ecs
+      ScalingTargetId: !Ref AutoScalingTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+          - ScalingAdjustment: -1
+            MetricIntervalLowerBound: 0
+
+  ScaleInAlarm:
+    Type: AWS::CloudWatch::Alarm
+    DependsOn:
+      - ECSService
+      - ScaleInPolicy
+    Properties:
+      AlarmDescription: Alarm to reduce capacity if CPU is low
+      EvaluationPeriods: 3
+      Statistic: Average
+      TreatMissingData: notBreaching
+      Period: 180
+      Threshold: 25
+      ComparisonOperator: LessThanThreshold
+      AlarmActions:
+        - !Ref ScaleInPolicy
+      Namespace: AWS/ECS
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: ClusterName
+          Value:
+            Fn::ImportValue: !Sub "${ECSStackName}-cluster-name"
+        - Name: ServiceName
+          Value: !GetAtt ECSService.Name
 
 Outputs:
   LogGroupArn:

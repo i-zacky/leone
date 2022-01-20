@@ -72,6 +72,30 @@ Resources:
                 Resource:
                   Fn::ImportValue: !Sub "${CognitoStackName}-user-pool-arn"
 
+  ECSServiceAutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Env}-${Project}-ecs-svc-as-role"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: application-autoscaling.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: ECSServiceAutoScaling
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - application-autoscaling:*
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:PutMetricAlarm
+                  - ecs:DescribeServices
+                  - ecs:UpdateService
+                Resource: '*'
+
 Outputs:
   ECSClusterName:
     Value: !Ref ECSCluster
@@ -99,3 +123,12 @@ Outputs:
     Value: !GetAtt ECSTaskRole.Arn
     Export:
       Name: !Sub "${AWS::StackName}-task-role-arn"
+
+  ECSServiceAutoScalingRoleId:
+    Value: !GetAtt ECSServiceAutoScalingRole.RoleId
+    Export:
+      Name: !Sub "${AWS::StackName}-svc-as-role-id"
+  ECSServiceAutoScalingRoleArn:
+    Value: !GetAtt ECSServiceAutoScalingRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-svc-as-role-arn"

@@ -46,7 +46,9 @@ elif [ "deploy" = "$1" ]; then
         HostedZoneId=${HOSTED_ZONE_ID} \
         DockerImageTag=${WEB_DOCKER_IMAGE_TAG} \
         TaskCPU=${WEB_TASK_CPU} \
-        TaskMemory=${WEB_TASK_MEMORY}
+        TaskMemory=${WEB_TASK_MEMORY} \
+        TaskMinCapacity=${WEB_TASK_MIN_CAPACITY} \
+        TaskMaxCapacity=${WEB_TASK_MAX_CAPACITY}
 else
   echo "[ERROR] unknown action command"
   exit 1
