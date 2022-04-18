@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
 Description: Web Service of ECS on Fargate
 
 Parameters:
@@ -11,27 +12,11 @@ Parameters:
     Type: String
     Description: Environment Name
 
-  VPCStackName:
-    Type: String
-    Description: Stack Name of VPC
-  SGStackName:
-    Type: String
-    Description: Stack Name of SecurityGroup
-  ECRStackName:
-    Type: String
-    Description: Stack Name of ECR
-  ECSStackName:
-    Type: String
-    Description: Stack Name of ECS
-  ACMStackName:
-    Type: String
-    Description: Stack Name of ACM
-
   DomainName:
     Type: String
     Description: Domain Name
   HostedZoneId:
-    Type: String
+    Type: AWS::Route53::HostedZone::Id
     Description: Hosted Zone Id
   DockerImageTag:
     Type: String
@@ -54,27 +39,27 @@ Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/fargate/${Env}-${Project}-web"
+      LogGroupName: !Sub '/fargate/${Env}-${Project}-web'
 
   ECSTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: !Sub "${Env}-${Project}-web-task"
+      Family: !Sub '${Env}-${Project}-web-task'
       RequiresCompatibilities:
         - FARGATE
       Cpu: !Ref TaskCPU
       Memory: !Ref TaskMemory
       NetworkMode: awsvpc
       TaskRoleArn:
-        Fn::ImportValue: !Sub "${ECSStackName}-task-role-arn"
+        Fn::ImportValue: !Sub '${Env}-${Project}-ecs:task-role-arn'
       ExecutionRoleArn:
-        Fn::ImportValue: !Sub "${ECSStackName}-task-exec-role-arn"
+        Fn::ImportValue: !Sub '${Env}-${Project}-ecs:task-execution-role-arn'
       ContainerDefinitions:
-        - Name: !Sub "${Env}-${Project}-web-container"
+        - Name: !Sub '${Env}-${Project}-web-container'
           Image: !Sub
-            - "${RepositoryURL}:${DockerImageTag}"
+            - '${RepositoryURL}:${DockerImageTag}'
             - RepositoryURL:
-                Fn::ImportValue: !Sub "${ECRStackName}-web-repository-uri"
+                Fn::ImportValue: !Sub '${Env}-${Project}-ecr:web-repository-uri'
               DockerImageTag: !Ref DockerImageTag
           PortMappings:
             - HostPort: 80
@@ -85,33 +70,32 @@ Resources:
             Options:
               awslogs-region: !Ref AWS::Region
               awslogs-group: !Ref LogGroup
-              awslogs-stream-prefix: !Sub "${Env}-${Project}-web"
+              awslogs-stream-prefix: !Sub '${Env}-${Project}-web'
 
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub "${Env}-${Project}-web-alb"
+      Name: !Sub '${Env}-${Project}-web-alb'
       IpAddressType: ipv4
       Scheme: internet-facing
       Type: application
-      Subnets:
-        - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-a-id"
-        - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-c-id"
-        - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-d-id"
+      Subnets: !Split
+        - ','
+        - Fn::ImportValue: !Sub '${Env}-${Project}-vpc:public-subnet-ids'
       SecurityGroups:
-        - Fn::ImportValue: !Sub "${SGStackName}-public-sg-id"
+        Fn::ImportValue: !Sub '${Env}-${Project}-security-group:public-security-group-id'
       Tags:
         - Key: Name
-          Value: !Sub "${Env}-${Project}-web-alb"
+          Value: !Sub '${Env}-${Project}-web-alb'
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn:
       - ApplicationLoadBalancer
     Properties:
-      Name: !Sub "${Env}-${Project}-web-tg"
+      Name: !Sub '${Env}-${Project}-web-tg'
       VpcId:
-        Fn::ImportValue: !Sub "${VPCStackName}-id"
+        Fn::ImportValue: !Sub '${Env}-${Project}-vpc:id'
       Protocol: HTTP
       Port: 80
       TargetType: ip
@@ -128,7 +112,7 @@ Resources:
           Value: 300
       Tags:
         - Key: Name
-          Value: !Sub "${Env}-${Project}-web-tg"
+          Value: !Sub '${Env}-${Project}-web-tg'
 
   LoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -139,10 +123,10 @@ Resources:
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Protocol: HTTPS
       Port: 443
-      SslPolicy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+      SslPolicy: 'ELBSecurityPolicy-TLS-1-2-2017-01'
       Certificates:
         - CertificateArn:
-            Fn::ImportValue: !Sub "${ACMStackName}-certificate-arn"
+            Fn::ImportValue: !Sub '${Env}-${Project}-certificate-manager:certificate-arn'
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref TargetGroup
@@ -167,24 +151,23 @@ Resources:
       - ECSTaskDefinition
     Properties:
       Cluster:
-        Fn::ImportValue: !Sub "${ECSStackName}-cluster-arn"
-      ServiceName: !Sub "${Env}-${Project}-web-service"
+        Fn::ImportValue: !Sub '${Env}-${Project}-ecs:cluster-arn'
+      ServiceName: !Sub '${Env}-${Project}-web-service'
       DesiredCount: !Ref TaskMinCapacity
       LaunchType: FARGATE
       TaskDefinition: !Ref ECSTaskDefinition
       LoadBalancers:
-        - ContainerName: !Sub "${Env}-${Project}-web-container"
+        - ContainerName: !Sub '${Env}-${Project}-web-container'
           ContainerPort: 80
           TargetGroupArn: !Ref TargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           SecurityGroups:
-            - Fn::ImportValue: !Sub "${SGStackName}-ecs-web-sg-id"
-          Subnets:
-            - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-a-id"
-            - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-c-id"
-            - Fn::ImportValue: !Sub "${VPCStackName}-public-subnet-d-id"
+            - Fn::ImportValue: !Sub '${Env}-${Project}-security-group:ecs-web-security-group-id'
+          Subnets: !Split
+            - ','
+            - Fn::ImportValue: !Sub '${Env}-${Project}-vpc:public-subnet-ids'
 
   AutoScalingTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -195,12 +178,12 @@ Resources:
       MaxCapacity: !Ref TaskMaxCapacity
       ServiceNamespace: ecs
       ResourceId: !Sub
-        - "service/${ClusterName}/${ServiceName}"
+        - 'service/${ClusterName}/${ServiceName}'
         - ClusterName:
-            Fn::ImportValue: !Sub "${ECSStackName}-cluster-name"
+            Fn::ImportValue: !Sub '${Env}-${Project}-ecs:cluster-name'
           ServiceName: !GetAtt ECSService.Name
       RoleARN:
-        Fn::ImportValue: !Sub "${ECSStackName}-svc-as-role-arn"
+        Fn::ImportValue: !Sub '${Env}-${Project}-ecs:service-auto-scaling-role-arn'
       ScalableDimension: ecs:service:DesiredCount
 
   ScaleOutPolicy:
@@ -208,7 +191,7 @@ Resources:
     DependsOn:
       - AutoScalingTarget
     Properties:
-      PolicyName: !Sub "${Env}-${Project}-svc-scale-out-policy"
+      PolicyName: !Sub '${Env}-${Project}-svc-scale-out-policy'
       PolicyType: StepScaling
       ServiceNamespace: ecs
       ScalingTargetId: !Ref AutoScalingTarget
@@ -240,7 +223,7 @@ Resources:
       Dimensions:
         - Name: ClusterName
           Value:
-            Fn::ImportValue: !Sub "${ECSStackName}-cluster-name"
+            Fn::ImportValue: !Sub '${Env}-${Project}-ecs:cluster-name'
         - Name: ServiceName
           Value: !GetAtt ECSService.Name
 
@@ -249,7 +232,7 @@ Resources:
     DependsOn:
       - AutoScalingTarget
     Properties:
-      PolicyName: !Sub "${Env}-${Project}-svc-scale-in-policy"
+      PolicyName: !Sub '${Env}-${Project}-svc-scale-in-policy'
       PolicyType: StepScaling
       ServiceNamespace: ecs
       ScalingTargetId: !Ref AutoScalingTarget
@@ -281,7 +264,7 @@ Resources:
       Dimensions:
         - Name: ClusterName
           Value:
-            Fn::ImportValue: !Sub "${ECSStackName}-cluster-name"
+            Fn::ImportValue: !Sub '${Env}-${Project}-ecs:cluster-name'
         - Name: ServiceName
           Value: !GetAtt ECSService.Name
 
@@ -289,52 +272,52 @@ Outputs:
   LogGroupArn:
     Value: !GetAtt LogGroup.Arn
     Export:
-      Name: !Sub "${AWS::StackName}-log-group-arn"
+      Name: !Sub '${AWS::StackName}-log-group-arn'
 
   ECSTaskDefinitionArn:
     Value: !Ref ECSTaskDefinition
     Export:
-      Name: !Sub "${AWS::StackName}-ecs-task-definition-arn"
+      Name: !Sub '${AWS::StackName}-ecs-task-definition-arn'
 
   ApplicationLoadBalancerArn:
     Value: !Ref ApplicationLoadBalancer
     Export:
-      Name: !Sub "${AWS::StackName}-alb-arn"
+      Name: !Sub '${AWS::StackName}-alb-arn'
   ApplicationLoadBalancerDNSName:
     Value: !GetAtt ApplicationLoadBalancer.DNSName
     Export:
-      Name: !Sub "${AWS::StackName}-alb-dns-name"
+      Name: !Sub '${AWS::StackName}-alb-dns-name'
   ApplicationLoadBalancerHostedZoneId:
     Value: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
     Export:
-      Name: !Sub "${AWS::StackName}-alb-hosted-zone-id"
+      Name: !Sub '${AWS::StackName}-alb-hosted-zone-id'
   ApplicationLoadBalancerFullName:
     Value: !GetAtt ApplicationLoadBalancer.LoadBalancerFullName
     Export:
-      Name: !Sub "${AWS::StackName}-alb-full-name"
+      Name: !Sub '${AWS::StackName}-alb-full-name'
   ApplicationLoadBalancerName:
     Value: !GetAtt ApplicationLoadBalancer.LoadBalancerName
     Export:
-      Name: !Sub "${AWS::StackName}-alb-name"
+      Name: !Sub '${AWS::StackName}-alb-name'
 
   TargetGroupArn:
     Value: !Ref TargetGroup
     Export:
-      Name: !Sub "${AWS::StackName}-tg-arn"
+      Name: !Sub '${AWS::StackName}-tg-arn'
   TargetGroupFullName:
     Value: !GetAtt TargetGroup.TargetGroupFullName
     Export:
-      Name: !Sub "${AWS::StackName}-tg-full-name"
+      Name: !Sub '${AWS::StackName}-tg-full-name'
   TargetGroupName:
     Value: !GetAtt TargetGroup.TargetGroupName
     Export:
-      Name: !Sub "${AWS::StackName}-tg-name"
+      Name: !Sub '${AWS::StackName}-tg-name'
 
   ECSServiceArn:
     Value: !Ref ECSService
     Export:
-      Name: !Sub "${AWS::StackName}-ecs-service-arn"
+      Name: !Sub '${AWS::StackName}-ecs-service-arn'
   ECSServiceName:
     Value: !GetAtt ECSService.Name
     Export:
-      Name: !Sub "${AWS::StackName}-ecs-service-name"
+      Name: !Sub '${AWS::StackName}-ecs-service-name'

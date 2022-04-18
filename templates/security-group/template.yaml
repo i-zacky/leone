@@ -1,48 +1,37 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Security Group
+Transform: AWS::Serverless-2016-10-31
+Description: SecurityGroup
 
 Parameters:
   Project:
-    Default: leone
     Type: String
-    Description: Project Name
   Env:
-    Default: dev
     Type: String
-    Description: Environment Name
 
-  VPCStackName:
-    Type: String
-    Description: Stack Name of VPC
+  VpcId:
+    Type: AWS::EC2::VPC::Id
 
   PublicSubnetCIDRA:
     Type: String
-    Description: Public Subnet CIDR Block AZ-A
   PublicSubnetCIDRC:
     Type: String
-    Description: Public Subnet CIDR Block AZ-C
   PublicSubnetCIDRD:
     Type: String
-    Description: Public Subnet CIDR Block AZ-D
 
   PrivateSubnetCIDRA:
     Type: String
-    Description: Private Subnet CIDR Block AZ-A
   PrivateSubnetCIDRC:
     Type: String
-    Description: Private Subnet CIDR Block AZ-C
   PrivateSubnetCIDRD:
     Type: String
-    Description: Private Subnet CIDR Block AZ-D
 
 Resources:
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub "${Env}-${Project}-bastion-sg"
-      GroupDescription: !Sub "${Env}-${Project}-bastion-sg"
-      VpcId:
-        Fn::ImportValue: !Sub "${VPCStackName}-id"
+      GroupName: !Sub '${Env}-${Project}-bastion-sg'
+      GroupDescription: !Sub '${Env}-${Project}-bastion-sg'
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           CidrIp: 0.0.0.0/0
@@ -51,15 +40,14 @@ Resources:
           Description: SSH
       Tags:
         - Key: Name
-          Value: !Sub "${Env}-${Project}-bastion-sg"
+          Value: !Sub '${Env}-${Project}-bastion-sg'
 
   AuroraSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub "${Env}-${Project}-aurora-sg"
-      GroupDescription: !Sub "${Env}-${Project}-aurora-sg"
-      VpcId:
-        Fn::ImportValue: !Sub "${VPCStackName}-id"
+      GroupName: !Sub '${Env}-${Project}-aurora-sg'
+      GroupDescription: !Sub '${Env}-${Project}-aurora-sg'
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           CidrIp: 0.0.0.0/0
@@ -68,15 +56,14 @@ Resources:
           Description: PostgreSQL Port
       Tags:
         - Key: Name
-          Value: !Sub "${Env}-${Project}-aurora-sg"
+          Value: !Sub '${Env}-${Project}-aurora-sg'
 
   PublicSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub "${Env}-${Project}-public-sg"
-      GroupDescription: !Sub "${Env}-${Project}-public-sg"
-      VpcId:
-        Fn::ImportValue: !Sub "${VPCStackName}-id"
+      GroupName: !Sub '${Env}-${Project}-public-sg'
+      GroupDescription: !Sub '${Env}-${Project}-public-sg'
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: -1
           CidrIp: !Ref PublicSubnetCIDRA
@@ -97,15 +84,14 @@ Resources:
           ToPort: 443
       Tags:
         - Key: Name
-          Value: !Sub "${Env}-${Project}-public-sg"
+          Value: !Sub '${Env}-${Project}-public-sg'
 
   PrivateSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub "${Env}-${Project}-private-sg"
-      GroupDescription: !Sub "${Env}-${Project}-private-sg"
-      VpcId:
-        Fn::ImportValue: !Sub "${VPCStackName}-id"
+      GroupName: !Sub '${Env}-${Project}-private-sg'
+      GroupDescription: !Sub '${Env}-${Project}-private-sg'
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: -1
           CidrIp: !Ref PrivateSubnetCIDRA
@@ -116,27 +102,16 @@ Resources:
         - IpProtocol: -1
           CidrIp: !Ref PrivateSubnetCIDRD
           Description: Internal Subnet IP AZ-D
-        - IpProtocol: -1
-          SourceSecurityGroupId: !Ref PublicSecurityGroup
-        - IpProtocol: tcp
-          CidrIp: 0.0.0.0/0
-          FromPort: 80
-          ToPort: 80
-        - IpProtocol: tcp
-          CidrIp: 0.0.0.0/0
-          FromPort: 443
-          ToPort: 443
       Tags:
         - Key: Name
-          Value: !Sub "${Env}-${Project}-private-sg"
+          Value: !Sub '${Env}-${Project}-private-sg'
 
   ECSWebSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub "${Env}-${Project}-ecs-web-sg"
-      GroupDescription: !Sub "${Env}-${Project}-ecs-web-sg"
-      VpcId:
-        Fn::ImportValue: !Sub "${VPCStackName}-id"
+      GroupName: !Sub '${Env}-${Project}-ecs-web-sg'
+      GroupDescription: !Sub '${Env}-${Project}-ecs-web-sg'
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -148,15 +123,14 @@ Resources:
           SourceSecurityGroupId: !Ref PublicSecurityGroup
       Tags:
         - Key: Name
-          Value: !Sub "${Env}-${Project}-ecs-web-sg"
+          Value: !Sub '${Env}-${Project}-ecs-web-sg'
 
   ECSAPISecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub "${Env}-${Project}-ecs-api-sg"
-      GroupDescription: !Sub "${Env}-${Project}-ecs-api-sg"
-      VpcId:
-        Fn::ImportValue: !Sub "${VPCStackName}-id"
+      GroupName: !Sub '${Env}-${Project}-ecs-api-sg'
+      GroupDescription: !Sub '${Env}-${Project}-ecs-api-sg'
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 8080
@@ -168,35 +142,23 @@ Resources:
           SourceSecurityGroupId: !Ref PublicSecurityGroup
       Tags:
         - Key: Name
-          Value: !Sub "${Env}-${Project}-ecs-api-sg"
+          Value: !Sub '${Env}-${Project}-ecs-api-sg'
 
 Outputs:
   BastionSecurityGroupId:
     Value: !GetAtt BastionSecurityGroup.GroupId
-    Export:
-      Name: !Sub "${AWS::StackName}-bastion-sg-id"
 
   AuroraSecurityGroupId:
     Value: !GetAtt AuroraSecurityGroup.GroupId
-    Export:
-      Name: !Sub "${AWS::StackName}-aurora-sg-id"
 
   PublicSecurityGroupId:
     Value: !GetAtt PublicSecurityGroup.GroupId
-    Export:
-      Name: !Sub "${AWS::StackName}-public-sg-id"
 
   PrivateSecurityGroupId:
     Value: !GetAtt PrivateSecurityGroup.GroupId
-    Export:
-      Name: !Sub "${AWS::StackName}-private-sg-id"
 
   ECSWebSecurityGroupId:
     Value: !GetAtt ECSWebSecurityGroup.GroupId
-    Export:
-      Name: !Sub "${AWS::StackName}-ecs-web-sg-id"
 
   ECSAPISecurityGroupId:
     Value: !GetAtt ECSAPISecurityGroup.GroupId
-    Export:
-      Name: !Sub "${AWS::StackName}-ecs-api-sg-id"

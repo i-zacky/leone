@@ -1,25 +1,15 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: S3
+Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-  Project:
-    Default: leone
+  BucketName:
     Type: String
-    Description: Project Name
-  Env:
-    Default: dev
-    Type: String
-    Description: Environment Name
-
-  DataBucketName:
-    Type: String
-    Description: Data Bucket Name
 
 Resources:
-  DataBucket:
+  Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Ref DataBucketName
+      BucketName: !Ref BucketName
       AccessControl: Private
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
@@ -38,11 +28,8 @@ Resources:
             MaxAge: 3600
 
 Outputs:
-  DataBucketName:
-    Value: !Ref DataBucket
-    Export:
-      Name: !Sub "${AWS::StackName}-data-bucket-name"
-  DataBucketArn:
-    Value: !GetAtt DataBucket.Arn
-    Export:
-      Name: !Sub "${AWS::StackName}-data-bucket-arn"
+  BucketName:
+    Value: !Ref Bucket
+
+  BucketArn:
+    Value: !GetAtt Bucket.Arn

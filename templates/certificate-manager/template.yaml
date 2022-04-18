@@ -1,22 +1,12 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: ACM
+Transform: AWS::Serverless-2016-10-31
+Description: CertificateManager
 
 Parameters:
-  Project:
-    Default: leone
-    Type: String
-    Description: Project Name
-  Env:
-    Default: dev
-    Type: String
-    Description: Environment Name
-
   HostedZoneId:
-    Type: String
-    Description: Hosted Zone Id
+    Type: AWS::Route53::HostedZone::Id
   DomainName:
     Type: String
-    Description: Domain Name
 
 Resources:
   Certificate:
@@ -27,11 +17,9 @@ Resources:
         - DomainName: !Ref DomainName
           HostedZoneId: !Ref HostedZoneId
       SubjectAlternativeNames:
-        - !Sub "*.${DomainName}"
+        - !Sub '*.${DomainName}'
       ValidationMethod: DNS
 
 Outputs:
   CertificateArn:
     Value: !Ref Certificate
-    Export:
-      Name: !Sub "${AWS::StackName}-certificate-arn"
