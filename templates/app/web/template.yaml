@@ -30,7 +30,7 @@ Parameters:
     Description: Memory Size of ECS Task
   TaskMinCapacity:
     Type: String
-    Description: Service Minumn Process Capacity
+    Description: Service Minimum Process Capacity
   TaskMaxCapacity:
     Type: String
     Description: Service Maximum Process Capacity
@@ -211,6 +211,7 @@ Resources:
       - Service
       - ScaleOutPolicy
     Properties:
+      AlarmName: !Sub '${Env}-${Project}-web-scale-out-alarm'
       AlarmDescription: Alarm to add capacity if CPU is high
       EvaluationPeriods: 3
       Statistic: Average
@@ -244,7 +245,7 @@ Resources:
         MetricAggregationType: Average
         StepAdjustments:
           - ScalingAdjustment: -1
-            MetricIntervalLowerBound: 0
+            MetricIntervalUpperBound: 0
 
   ScaleInAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -252,11 +253,12 @@ Resources:
       - Service
       - ScaleInPolicy
     Properties:
+      AlarmName: !Sub '${Env}-${Project}-web-scale-in-alarm'
       AlarmDescription: Alarm to reduce capacity if CPU is low
-      EvaluationPeriods: 3
+      EvaluationPeriods: 10
       Statistic: Average
       TreatMissingData: notBreaching
-      Period: 180
+      Period: 60
       Threshold: 25
       ComparisonOperator: LessThanThreshold
       AlarmActions:
