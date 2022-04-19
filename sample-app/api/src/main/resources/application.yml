@@ -1,0 +1,31 @@
+spring:
+  profiles:
+    active: default
+  datasource:
+    host: ${DB_HOST}
+    port: ${DB_PORT}
+    db-name: ${DB_NAME}
+    url: jdbc:postgresql://${spring.datasource.host}:${spring.datasource.port}/${spring.datasource.db-name}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+aws:
+  default-region: ${AWS_DEFAULT_REGION}
+  s3:
+    region: ${aws.default-region}
+    endpoint-url: https://s3.${aws.s3.region}.amazonaws.com
+    data-bucket: ${S3_DATA_BUCKET}
+  cognito:
+    region: ${aws.default-region}
+    user-pool-id: ${COGNITO_USER_POOL_ID}
+    user-pool-client-id: ${COGNITO_USER_POOL_CLIENT_ID}
+
+---
+spring:
+  config:
+    activate:
+      on-profile:
+        - dev
+        - stg
+        - prod

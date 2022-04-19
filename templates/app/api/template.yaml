@@ -29,26 +29,16 @@ Parameters:
     Type: String
     Description: Memory Size of ECS Task
 
-  AllowOrigin:
-    Type: String
-    Description: ALLOW_ORIGIN
-  ClockFixed:
-    Type: String
-    Description: CLOCK_FIXED
-
-Mappings:
-  TaskDefinition:
-    ap-northeast-1:
-      Timezone: Asia/Tokyo
-
 Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub '/fargate/${Env}-${Project}-api'
 
-  ECSTaskDefinition:
+  TaskDefinition:
     Type: AWS::ECS::TaskDefinition
+    DependsOn:
+      - LogGroup
     Properties:
       Family: !Sub '${Env}-${Project}-api-task'
       RequiresCompatibilities:
@@ -63,10 +53,10 @@ Resources:
       ContainerDefinitions:
         - Name: !Sub '${Env}-${Project}-api-container'
           Image: !Sub
-            - '${RepositoryURL}:${DockerImageTag}'
-            - RepositoryURL:
+            - '${URL}:${Tag}'
+            - URL:
                 Fn::ImportValue: !Sub '${Env}-${Project}-ecr:api-repository-uri'
-              DockerImageTag: !Ref DockerImageTag
+              Tag: !Ref DockerImageTag
           PortMappings:
             - HostPort: 8080
               ContainerPort: 8080
@@ -80,26 +70,22 @@ Resources:
           Environment:
             - Name: JAVA_OPTS
               Value: !Sub '-Dspring.profiles.active=${Env}'
-            - Name: ALLOW_ORIGIN
-              Value: !Ref AllowOrigin
-            - Name: DB_JDBC_DRIVER
-              Value: 'org.postgresql.Driver'
-            - Name: DB_JDBC_URL
+            - Name: DB_HOST
               Value: !Sub
-                - 'jdbc:postgresql://${Host}:${Port}/${Database}'
-                - Host: !Sub
-                    - '{{resolve:secretsmanager:${Secret}:SecretString:host}}'
-                    - Secret:
-                        Fn::ImportValue: !Sub '${Env}-${Project}-rds:aurora-secret-arn'
-                  Port: !Sub
-                    - '{{resolve:secretsmanager:${Secret}:SecretString:port}}'
-                    - Secret:
-                        Fn::ImportValue: !Sub '${Env}-${Project}-rds:aurora-secret-arn'
-                  Database: !Sub
-                    - '{{resolve:secretsmanager:${Secret}:SecretString:dbname}}'
-                    - Secret:
-                        Fn::ImportValue: !Sub '${Env}-${Project}-rds:aurora-secret-arn'
-            - Name: DB_USER
+                - '{{resolve:secretsmanager:${Secret}:SecretString:host}}'
+                - Secret:
+                    Fn::ImportValue: !Sub '${Env}-${Project}-rds:aurora-secret-arn'
+            - Name: DB_PORT
+              Value: !Sub
+                - '{{resolve:secretsmanager:${Secret}:SecretString:port}}'
+                - Secret:
+                    Fn::ImportValue: !Sub '${Env}-${Project}-rds:aurora-secret-arn'
+            - Name: DB_NAME
+              Value: !Sub
+                - '{{resolve:secretsmanager:${Secret}:SecretString:dbname}}'
+                - Secret:
+                    Fn::ImportValue: !Sub '${Env}-${Project}-rds:aurora-secret-arn'
+            - Name: DB_USERNAME
               Value: !Sub
                 - '{{resolve:secretsmanager:${Secret}:SecretString:username}}'
                 - Secret:
@@ -109,25 +95,19 @@ Resources:
                 - '{{resolve:secretsmanager:${Secret}:SecretString:password}}'
                 - Secret:
                     Fn::ImportValue: !Sub '${Env}-${Project}-rds:aurora-secret-arn'
-            - Name: CLOCK_FIXED
-              Value: !Ref ClockFixed
-            - Name: CLOCK_TIME_ZONE
-              Value: !FindInMap [TaskDefinition, !Ref AWS::Region, Timezone]
             - Name: AWS_DEFAULT_REGION
               Value: !Ref AWS::Region
-            - Name: S3_ENDPOINT_URL
-              Value: !Sub 'https://s3.${AWS::Region}.amazonaws.com'
             - Name: S3_DATA_BUCKET
               Value:
                 Fn::ImportValue: !Sub '${Env}-${Project}-s3:data-bucket-name'
             - Name: COGNITO_USER_POOL_ID
               Value:
                 Fn::ImportValue: !Sub '${Env}-${Project}-cognito:user-pool-id'
-            - Name: COGNITO_CLIENT_ID
+            - Name: COGNITO_USER_POOL_CLIENT_ID
               Value:
                 Fn::ImportValue: !Sub '${Env}-${Project}-cognito:user-pool-client-id'
 
-  ApplicationLoadBalancer:
+  LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Sub '${Env}-${Project}-api-alb'
@@ -145,6 +125,8 @@ Resources:
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn:
+      - LoadBalancer
     Properties:
       Name: !Sub '${Env}-${Project}-api-tg'
       VpcId:
@@ -155,14 +137,14 @@ Resources:
       Matcher:
         HttpCode: 200
       HealthCheckPath: /actuator/health
-      HealthCheckIntervalSeconds: 30
+      HealthCheckIntervalSeconds: 10
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 5
       UnhealthyThresholdCount: 2
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
-          Value: 300
+          Value: 5
       Tags:
         - Key: Name
           Value: !Sub '${Env}-${Project}-api-tg'
@@ -170,10 +152,10 @@ Resources:
   LoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     DependsOn:
-      - ApplicationLoadBalancer
+      - LoadBalancer
       - TargetGroup
     Properties:
-      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      LoadBalancerArn: !Ref LoadBalancer
       Protocol: HTTPS
       Port: 443
       SslPolicy: 'ELBSecurityPolicy-TLS-1-2-2017-01'
@@ -187,27 +169,27 @@ Resources:
   ARecordSet:
     Type: AWS::Route53::RecordSet
     DependsOn:
-      - ApplicationLoadBalancer
+      - LoadBalancer
     Properties:
       Name: !Ref DomainName
       HostedZoneId: !Ref HostedZoneId
       Type: A
       AliasTarget:
-        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
-        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
 
-  ECSService:
+  Service:
     Type: AWS::ECS::Service
     DependsOn:
-      - ApplicationLoadBalancer
-      - ECSTaskDefinition
+      - LoadBalancer
+      - TaskDefinition
     Properties:
       Cluster:
         Fn::ImportValue: !Sub '${Env}-${Project}-ecs:cluster-arn'
       ServiceName: !Sub '${Env}-${Project}-api-service'
       DesiredCount: 1
       LaunchType: FARGATE
-      TaskDefinition: !Ref ECSTaskDefinition
+      TaskDefinition: !Ref TaskDefinition
       LoadBalancers:
         - ContainerName: !Sub '${Env}-${Project}-api-container'
           ContainerPort: 8080
@@ -220,57 +202,3 @@ Resources:
           Subnets: !Split
             - ','
             - Fn::ImportValue: !Sub '${Env}-${Project}-vpc:public-subnet-ids'
-
-Outputs:
-  LogGroupArn:
-    Value: !GetAtt LogGroup.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-log-group-arn'
-
-  ECSTaskDefinitionArn:
-    Value: !Ref ECSTaskDefinition
-    Export:
-      Name: !Sub '${AWS::StackName}-ecs-task-definition-arn'
-
-  ApplicationLoadBalancerArn:
-    Value: !Ref ApplicationLoadBalancer
-    Export:
-      Name: !Sub '${AWS::StackName}-alb-arn'
-  ApplicationLoadBalancerDNSName:
-    Value: !GetAtt ApplicationLoadBalancer.DNSName
-    Export:
-      Name: !Sub '${AWS::StackName}-alb-dns-name'
-  ApplicationLoadBalancerHostedZoneId:
-    Value: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
-    Export:
-      Name: !Sub '${AWS::StackName}-alb-hosted-zone-id'
-  ApplicationLoadBalancerFullName:
-    Value: !GetAtt ApplicationLoadBalancer.LoadBalancerFullName
-    Export:
-      Name: !Sub '${AWS::StackName}-alb-full-name'
-  ApplicationLoadBalancerName:
-    Value: !GetAtt ApplicationLoadBalancer.LoadBalancerName
-    Export:
-      Name: !Sub '${AWS::StackName}-alb-name'
-
-  TargetGroupArn:
-    Value: !Ref TargetGroup
-    Export:
-      Name: !Sub '${AWS::StackName}-tg-arn'
-  TargetGroupFullName:
-    Value: !GetAtt TargetGroup.TargetGroupFullName
-    Export:
-      Name: !Sub '${AWS::StackName}-tg-full-name'
-  TargetGroupName:
-    Value: !GetAtt TargetGroup.TargetGroupName
-    Export:
-      Name: !Sub '${AWS::StackName}-tg-name'
-
-  ECSServiceArn:
-    Value: !Ref ECSService
-    Export:
-      Name: !Sub '${AWS::StackName}-ecs-service-arn'
-  ECSServiceName:
-    Value: !GetAtt ECSService.Name
-    Export:
-      Name: !Sub '${AWS::StackName}-ecs-service-name'

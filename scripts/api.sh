@@ -23,7 +23,6 @@ if [ "delete" = "$1" ]; then
     --no-prompts \
     --stack-name "${STACK_NAME}"
 elif [ "deploy" = "$1" ]; then
-  HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name ${DOMAIN_NAME} --query "HostedZones[0].Id" --output text | sed "s/^\/hostedzone\///")
   sam deploy \
     --region "${REGION}" \
     --template "${REPOSITORY_ROOT_DIR}/templates/${TEMPLATE_FILE}" \
@@ -41,9 +40,7 @@ elif [ "deploy" = "$1" ]; then
         HostedZoneId="${HOSTED_ZONE_ID}" \
         DockerImageTag="${API_DOCKER_IMAGE_TAG}" \
         TaskCPU="${API_TASK_CPU}" \
-        TaskMemory="${API_TASK_MEMORY}" \
-        AllowOrigin="${ALLOW_ORIGIN}" \
-        ClockFixed="${CLOCK_FIXED}"
+        TaskMemory="${API_TASK_MEMORY}"
 else
   echo "[ERROR] unknown action command"
   exit 1

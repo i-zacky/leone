@@ -51,11 +51,9 @@ WEB_TASK_MIN_CAPACITY=1
 WEB_TASK_MAX_CAPACITY=2
 
 ## API
-API_DOCKER_IMAGE_TAG=v20210115_2
+API_DOCKER_IMAGE_TAG=v20220419_3
 API_TASK_CPU=2048
 API_TASK_MEMORY=4096
-ALLOW_ORIGIN=https://${DOMAIN_NAME}
-CLOCK_FIXED=false
 
 ################################
 # Template files and Stack Name
@@ -100,5 +98,5 @@ ECS_TEMPLATE=ecs.cfn.yml
 ECS_STACK_NAME=${ENV}-${PROJ}-ecs
 ECS_WEB_TEMPLATE=app/web/template.yaml
 ECS_WEB_STACK_NAME=${ENV}-${PROJ}-web
-ECS_API_TEMPLATE=api.cfn.yml
+ECS_API_TEMPLATE=app/api/template.yaml
 ECS_API_STACK_NAME=${ENV}-${PROJ}-api
