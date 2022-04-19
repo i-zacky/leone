@@ -14,8 +14,8 @@ fi
 
 source "${REPOSITORY_ROOT_DIR}/env/$2"
 
-TEMPLATE_FILE=${ECS_API_TEMPLATE}
-STACK_NAME=${ECS_API_STACK_NAME}
+TEMPLATE_FILE=${API_TEMPLATE}
+STACK_NAME=${API_STACK_NAME}
 
 if [ "delete" = "$1" ]; then
   sam delete \

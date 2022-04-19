@@ -63,42 +63,8 @@ API_TASK_MAX_CAPACITY=2
 ROOT_TEMPLATE=template.yaml
 ROOT_STACK_NAME=${ENV}-${PROJ}-root
 
-## VPC
-VPC_TEMPLATE=vpc.cfn.yml
-VPC_STACK_NAME=${ENV}-${PROJ}-vpc
-
-## SecurityGroup
-SG_TEMPLATE=sg.cfn.yml
-SG_STACK_NAME=${ENV}-${PROJ}-sg
-
-## KMS
-KMS_TEMPLATE=kms.cfn.yml
-KMS_STACK_NAME=${ENV}-${PROJ}-kms
-
-## S3
-S3_TEMPLATE=s3.cfn.yml
-S3_STACK_NAME=${ENV}-${PROJ}-s3
-
-## Cognito
-COGNITO_TEMPLATE=cognito.cfn.yml
-COGNITO_STACK_NAME=${ENV}-${PROJ}-cognito
-
-## ECR
-ECR_TEMPLATE=ecr.cfn.yml
-ECR_STACK_NAME=${ENV}-${PROJ}-ecr
-
-## RDS
-RDS_TEMPLATE=rds.cfn.yml
-RDS_STACK_NAME=${ENV}-${PROJ}-rds
-
-## ACM
-ACM_TEMPLATE=acm.cfn.yml
-ACM_STACK_NAME=${ENV}-${PROJ}-acm
-
-## ECS
-ECS_TEMPLATE=ecs.cfn.yml
-ECS_STACK_NAME=${ENV}-${PROJ}-ecs
-ECS_WEB_TEMPLATE=app/web/template.yaml
-ECS_WEB_STACK_NAME=${ENV}-${PROJ}-web
-ECS_API_TEMPLATE=app/api/template.yaml
-ECS_API_STACK_NAME=${ENV}-${PROJ}-api
+## Application
+WEB_TEMPLATE=app/web/template.yaml
+WEB_STACK_NAME=${ENV}-${PROJ}-web
+API_TEMPLATE=app/api/template.yaml
+API_STACK_NAME=${ENV}-${PROJ}-api
