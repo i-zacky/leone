@@ -28,7 +28,7 @@ elif [ "deploy" = "$1" ]; then
     --template "${REPOSITORY_ROOT_DIR}/templates/${TEMPLATE_FILE}" \
     --stack-name "${STACK_NAME}" \
     --s3-bucket "${CF_TEMPLATE_BUCKET}" \
-    --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+    --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
     --no-fail-on-empty-changeset \
     --tags \
         Env="${ENV}" \
