@@ -41,7 +41,8 @@ elif [ "deploy" = "$1" ]; then
         DomainName="${DOMAIN_NAME}" \
         AdministratorEmail="${ADMINISTRATOR_EMAIL}" \
         DatabaseName="${DATABASE_NAME}" \
-        MasterUsername="${DATABASE_UER}"
+        MasterUsername="${DATABASE_UER}" \
+        BastionKeyPairName="${BASTION_KEY_PAIR_NAME}"
 
   echo "Update administrator password. ${STACK_NAME}"
   USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" --query "Stacks[].Outputs[?OutputKey==\`CognitoUserPoolId\`].[OutputValue]" --output text)

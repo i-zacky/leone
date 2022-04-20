@@ -35,6 +35,10 @@ Parameters:
     Type: String
     Description: Database Master User Name
 
+  BastionKeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: KeyPair Name of Bastion
+
 Resources:
   VPCStack:
     Type: AWS::Serverless::Application
@@ -117,6 +121,28 @@ Resources:
         Env: !Ref Env
         BucketArn: !GetAtt S3Stack.Outputs.DataBucketArn
         UserPoolArn: !GetAtt CognitoStack.Outputs.UserPoolArn
+
+  EC2Stack:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - RDSStack
+      - S3Stack
+      - CognitoStack
+    Properties:
+      Location: ec2/template.yaml
+      Parameters:
+        Project: !Ref Project
+        Env: !Ref Env
+        DataBucketArn: !GetAtt S3Stack.Outputs.DataBucketArn
+        UserPoolArn: !GetAtt CognitoStack.Outputs.UserPoolArn
+        AuroraClusterArn: !GetAtt RDSStack.Outputs.AuroraClusterArn
+        BastionKeyPairName: !Ref BastionKeyPairName
+        BastionSubnetId: !Select
+          - 0
+          - !Split
+            - ','
+            - !GetAtt VPCStack.Outputs.PublicSubnetIds
+        BastionSecurityGroupId: !GetAtt SecurityGroupStack.Outputs.BastionSecurityGroupId
 
 Outputs:
   VpcId:
@@ -218,3 +244,8 @@ Outputs:
     Value: !GetAtt ECSStack.Outputs.ECSServiceAutoScalingRoleArn
     Export:
       Name: !Sub '${Env}-${Project}-ecs:service-auto-scaling-role-arn'
+
+  BastionEIP:
+    Value: !GetAtt EC2Stack.Outputs.BastionEIP
+    Export:
+      Name: !Sub '${Env}-${Project}-ec2:bastion-eip'

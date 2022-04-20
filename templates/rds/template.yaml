@@ -137,3 +137,6 @@ Resources:
 Outputs:
   AuroraSecretArn:
     Value: !GetAtt AuroraCluster.Outputs.SecretArn
+
+  AuroraClusterArn:
+    Value: !GetAtt AuroraCluster.Outputs.DBClusterArn
