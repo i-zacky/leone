@@ -32,6 +32,7 @@ Resources:
     Properties:
       Location: administrator-user.yaml
       Parameters:
+        SecretName: !Sub '${Env}-${Project}-cognito-administrator-user-secret'
         Username: !Ref AdministratorEmail
         UserPoolId: !GetAtt UserPool.Outputs.UserPoolId
 
@@ -44,3 +45,6 @@ Outputs:
 
   UserPoolClientId:
     Value: !GetAtt UserPoolClient.Outputs.UserPoolClientId
+
+  AdministratorUserSecretArn:
+    Value: !GetAtt AdministratorUser.Outputs.SecretArn

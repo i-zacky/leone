@@ -4,12 +4,14 @@ Description: API Service of ECS on Fargate
 
 Parameters:
   Project:
-    Default: leone
     Type: String
     Description: Project Name
   Env:
-    Default: dev
     Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prod
     Description: Environment Name
 
   DomainName:
@@ -187,8 +189,10 @@ Resources:
   Service:
     Type: AWS::ECS::Service
     DependsOn:
-      - LoadBalancer
       - TaskDefinition
+      - LoadBalancer
+      - TargetGroup
+      - LoadBalancerListener
     Properties:
       Cluster:
         Fn::ImportValue: !Sub '${Env}-${Project}-ecs:cluster-arn'
@@ -226,86 +230,18 @@ Resources:
         Fn::ImportValue: !Sub '${Env}-${Project}-ecs:service-auto-scaling-role-arn'
       ScalableDimension: ecs:service:DesiredCount
 
-  ScaleOutPolicy:
+  ScalingPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     DependsOn:
       - ScalableTarget
     Properties:
-      PolicyName: !Sub '${Env}-${Project}-svc-scale-out-policy'
-      PolicyType: StepScaling
+      PolicyName: !Sub '${Env}-${Project}-api-service-target-tracking-scaling'
+      PolicyType: TargetTrackingScaling
       ServiceNamespace: ecs
       ScalingTargetId: !Ref ScalableTarget
-      StepScalingPolicyConfiguration:
-        AdjustmentType: ChangeInCapacity
-        Cooldown: 60
-        MetricAggregationType: Average
-        StepAdjustments:
-          - ScalingAdjustment: 1
-            MetricIntervalLowerBound: 0
-
-  ScaleOutAlarm:
-    Type: AWS::CloudWatch::Alarm
-    DependsOn:
-      - Service
-      - ScaleOutPolicy
-    Properties:
-      AlarmName: !Sub '${Env}-${Project}-api-scale-out-alarm'
-      AlarmDescription: Alarm to add capacity if CPU is high
-      EvaluationPeriods: 3
-      Statistic: Average
-      TreatMissingData: notBreaching
-      Period: 60
-      Threshold: 50
-      ComparisonOperator: GreaterThanThreshold
-      AlarmActions:
-        - !Ref ScaleOutPolicy
-      Namespace: AWS/ECS
-      MetricName: CPUUtilization
-      Dimensions:
-        - Name: ClusterName
-          Value:
-            Fn::ImportValue: !Sub '${Env}-${Project}-ecs:cluster-name'
-        - Name: ServiceName
-          Value: !GetAtt Service.Name
-
-  ScaleInPolicy:
-    Type: AWS::ApplicationAutoScaling::ScalingPolicy
-    DependsOn:
-      - ScalableTarget
-    Properties:
-      PolicyName: !Sub '${Env}-${Project}-svc-scale-in-policy'
-      PolicyType: StepScaling
-      ServiceNamespace: ecs
-      ScalingTargetId: !Ref ScalableTarget
-      StepScalingPolicyConfiguration:
-        AdjustmentType: ChangeInCapacity
-        Cooldown: 60
-        MetricAggregationType: Average
-        StepAdjustments:
-          - ScalingAdjustment: -1
-            MetricIntervalUpperBound: 0
-
-  ScaleInAlarm:
-    Type: AWS::CloudWatch::Alarm
-    DependsOn:
-      - Service
-      - ScaleInPolicy
-    Properties:
-      AlarmName: !Sub '${Env}-${Project}-api-scale-in-alarm'
-      AlarmDescription: Alarm to reduce capacity if CPU is low
-      EvaluationPeriods: 3
-      Statistic: Average
-      TreatMissingData: notBreaching
-      Period: 180
-      Threshold: 25
-      ComparisonOperator: LessThanThreshold
-      AlarmActions:
-        - !Ref ScaleInPolicy
-      Namespace: AWS/ECS
-      MetricName: CPUUtilization
-      Dimensions:
-        - Name: ClusterName
-          Value:
-            Fn::ImportValue: !Sub '${Env}-${Project}-ecs:cluster-name'
-        - Name: ServiceName
-          Value: !GetAtt Service.Name
+      TargetTrackingScalingPolicyConfiguration:
+        ScaleInCooldown: 60
+        ScaleOutCooldown: 30
+        TargetValue: 60
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization

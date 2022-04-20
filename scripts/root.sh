@@ -37,12 +37,6 @@ elif [ "deploy" = "$1" ]; then
         Project="${PROJ}" \
         Env="${ENV}" \
         CIDR="${CIDR}" \
-        PublicSubnetCIDRA="${PUBLIC_SUBNET_CIDR_A}" \
-        PublicSubnetCIDRC="${PUBLIC_SUBNET_CIDR_C}" \
-        PublicSubnetCIDRD="${PUBLIC_SUBNET_CIDR_D}" \
-        PrivateSubnetCIDRA="${PRIVATE_SUBNET_CIDR_A}" \
-        PrivateSubnetCIDRC="${PRIVATE_SUBNET_CIDR_C}" \
-        PrivateSubnetCIDRD="${PRIVATE_SUBNET_CIDR_D}" \
         HostedZoneId="${HOSTED_ZONE_ID}" \
         DomainName="${DOMAIN_NAME}" \
         AdministratorEmail="${ADMINISTRATOR_EMAIL}" \
@@ -50,7 +44,9 @@ elif [ "deploy" = "$1" ]; then
         MasterUsername="${DATABASE_UER}"
 
   echo "Update administrator password. ${STACK_NAME}"
-  USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name dev-leone-root --query "Stacks[].Outputs[?OutputKey==\`CognitoUserPoolId\`].[OutputValue]" --output text)
+  USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" --query "Stacks[].Outputs[?OutputKey==\`CognitoUserPoolId\`].[OutputValue]" --output text)
+  ADMINISTRATOR_SECRET_ARN=$(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" --query "Stacks[].Outputs[?OutputKey==\`AdministratorUserSecretArn\`].[OutputValue]" --output text)
+  ADMINISTRATOR_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "${ADMINISTRATOR_SECRET_ARN}" --query "SecretString" | jq -r 'fromjson | .password')
   aws cognito-idp admin-set-user-password \
     --user-pool-id "${USER_POOL_ID}" \
     --username "${ADMINISTRATOR_EMAIL}" \

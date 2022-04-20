@@ -11,18 +11,7 @@ Parameters:
   VpcId:
     Type: AWS::EC2::VPC::Id
 
-  PublicSubnetCIDRA:
-    Type: String
-  PublicSubnetCIDRC:
-    Type: String
-  PublicSubnetCIDRD:
-    Type: String
-
-  PrivateSubnetCIDRA:
-    Type: String
-  PrivateSubnetCIDRC:
-    Type: String
-  PrivateSubnetCIDRD:
+  CIDR:
     Type: String
 
 Resources:
@@ -66,13 +55,13 @@ Resources:
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: -1
-          CidrIp: !Ref PublicSubnetCIDRA
+          CidrIp: !Select [0, !Cidr [!Ref CIDR, 6, 8]]
           Description: Public Subnet IP AZ-A
         - IpProtocol: -1
-          CidrIp: !Ref PublicSubnetCIDRC
+          CidrIp: !Select [1, !Cidr [!Ref CIDR, 6, 8]]
           Description: Public Subnet IP AZ-C
         - IpProtocol: -1
-          CidrIp: !Ref PublicSubnetCIDRD
+          CidrIp: !Select [2, !Cidr [!Ref CIDR, 6, 8]]
           Description: Public Subnet IP AZ-D
         - IpProtocol: tcp
           CidrIp: 0.0.0.0/0
@@ -94,13 +83,13 @@ Resources:
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: -1
-          CidrIp: !Ref PrivateSubnetCIDRA
+          CidrIp: !Select [3, !Cidr [!Ref CIDR, 6, 8]]
           Description: Internal Subnet IP AZ-A
         - IpProtocol: -1
-          CidrIp: !Ref PrivateSubnetCIDRC
+          CidrIp: !Select [4, !Cidr [!Ref CIDR, 6, 8]]
           Description: Internal Subnet IP AZ-C
         - IpProtocol: -1
-          CidrIp: !Ref PrivateSubnetCIDRD
+          CidrIp: !Select [5, !Cidr [!Ref CIDR, 6, 8]]
           Description: Internal Subnet IP AZ-D
       Tags:
         - Key: Name

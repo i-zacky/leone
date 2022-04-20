@@ -10,6 +10,9 @@ Resources:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Ref ClusterName
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
 
 Outputs:
   ClusterName:

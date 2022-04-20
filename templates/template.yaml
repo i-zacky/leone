@@ -17,28 +17,8 @@ Parameters:
     Type: String
     Description: CIDR Block
 
-  PublicSubnetCIDRA:
-    Type: String
-    Description: Public Subnet CIDR Block AZ-A
-  PublicSubnetCIDRC:
-    Type: String
-    Description: Public Subnet CIDR Block AZ-C
-  PublicSubnetCIDRD:
-    Type: String
-    Description: Public Subnet CIDR Block AZ-D
-
-  PrivateSubnetCIDRA:
-    Type: String
-    Description: Private Subnet CIDR Block AZ-A
-  PrivateSubnetCIDRC:
-    Type: String
-    Description: Private Subnet CIDR Block AZ-C
-  PrivateSubnetCIDRD:
-    Type: String
-    Description: Private Subnet CIDR Block AZ-D
-
   HostedZoneId:
-    Type: String
+    Type: AWS::Route53::HostedZone::Id
     Description: Hosted Zone Id
   DomainName:
     Type: String
@@ -64,12 +44,6 @@ Resources:
         Project: !Ref Project
         Env: !Ref Env
         CIDR: !Ref CIDR
-        PublicSubnetCIDRA: !Ref PublicSubnetCIDRA
-        PublicSubnetCIDRC: !Ref PublicSubnetCIDRC
-        PublicSubnetCIDRD: !Ref PublicSubnetCIDRD
-        PrivateSubnetCIDRA: !Ref PrivateSubnetCIDRA
-        PrivateSubnetCIDRC: !Ref PrivateSubnetCIDRC
-        PrivateSubnetCIDRD: !Ref PrivateSubnetCIDRD
 
   SecurityGroupStack:
     Type: AWS::Serverless::Application
@@ -81,12 +55,7 @@ Resources:
         Project: !Ref Project
         Env: !Ref Env
         VpcId: !GetAtt VPCStack.Outputs.VpcId
-        PublicSubnetCIDRA: !Ref PublicSubnetCIDRA
-        PublicSubnetCIDRC: !Ref PublicSubnetCIDRC
-        PublicSubnetCIDRD: !Ref PublicSubnetCIDRD
-        PrivateSubnetCIDRA: !Ref PrivateSubnetCIDRA
-        PrivateSubnetCIDRC: !Ref PrivateSubnetCIDRC
-        PrivateSubnetCIDRD: !Ref PrivateSubnetCIDRD
+        CIDR: !Ref CIDR
 
   CertificateManagerStack:
     Type: AWS::Serverless::Application
@@ -214,6 +183,11 @@ Outputs:
     Value: !GetAtt CognitoStack.Outputs.UserPoolClientId
     Export:
       Name: !Sub '${Env}-${Project}-cognito:user-pool-client-id'
+
+  AdministratorUserSecretArn:
+    Value: !GetAtt CognitoStack.Outputs.AdministratorUserSecretArn
+    Export:
+      Name: !Sub '${Env}-${Project}-cognito:administrator-user-secret-arn'
 
   AuroraSecretArn:
     Value: !GetAtt RDSStack.Outputs.AuroraSecretArn

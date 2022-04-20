@@ -11,20 +11,6 @@ Parameters:
   CIDR:
     Type: String
 
-  PublicSubnetCIDRA:
-    Type: String
-  PublicSubnetCIDRC:
-    Type: String
-  PublicSubnetCIDRD:
-    Type: String
-
-  PrivateSubnetCIDRA:
-    Type: String
-  PrivateSubnetCIDRC:
-    Type: String
-  PrivateSubnetCIDRD:
-    Type: String
-
 Resources:
   VPC:
     Type: AWS::Serverless::Application
@@ -57,7 +43,7 @@ Resources:
       Parameters:
         SubnetName: !Sub '${Env}-${Project}-public-a'
         VpcId: !GetAtt VPC.Outputs.VpcId
-        CidrBlock: !Ref PublicSubnetCIDRA
+        CidrBlock: !Select [0, !Cidr [!Ref CIDR, 6, 8]]
         AvailabilityZone: !Sub '${AWS::Region}a'
 
   PublicNetworkAclAssociationA:
@@ -85,7 +71,7 @@ Resources:
       Parameters:
         SubnetName: !Sub '${Env}-${Project}-public-c'
         VpcId: !GetAtt VPC.Outputs.VpcId
-        CidrBlock: !Ref PublicSubnetCIDRC
+        CidrBlock: !Select [1, !Cidr [!Ref CIDR, 6, 8]]
         AvailabilityZone: !Sub '${AWS::Region}c'
 
   PublicNetworkAclAssociationC:
@@ -113,7 +99,7 @@ Resources:
       Parameters:
         SubnetName: !Sub '${Env}-${Project}-public-d'
         VpcId: !GetAtt VPC.Outputs.VpcId
-        CidrBlock: !Ref PublicSubnetCIDRD
+        CidrBlock: !Select [2, !Cidr [!Ref CIDR, 6, 8]]
         AvailabilityZone: !Sub '${AWS::Region}d'
 
   PublicNetworkAclAssociationD:
@@ -141,7 +127,7 @@ Resources:
       Parameters:
         SubnetName: !Sub '${Env}-${Project}-private-a'
         VpcId: !GetAtt VPC.Outputs.VpcId
-        CidrBlock: !Ref PrivateSubnetCIDRA
+        CidrBlock: !Select [3, !Cidr [!Ref CIDR, 6, 8]]
         AvailabilityZone: !Sub '${AWS::Region}a'
 
   PrivateNetworkAclAssociationA:
@@ -185,7 +171,7 @@ Resources:
       Parameters:
         SubnetName: !Sub '${Env}-${Project}-private-c'
         VpcId: !GetAtt VPC.Outputs.VpcId
-        CidrBlock: !Ref PrivateSubnetCIDRC
+        CidrBlock: !Select [4, !Cidr [!Ref CIDR, 6, 8]]
         AvailabilityZone: !Sub '${AWS::Region}c'
 
   PrivateNetworkAclAssociationC:
@@ -229,7 +215,7 @@ Resources:
       Parameters:
         SubnetName: !Sub '${Env}-${Project}-private-d'
         VpcId: !GetAtt VPC.Outputs.VpcId
-        CidrBlock: !Ref PrivateSubnetCIDRD
+        CidrBlock: !Select [5, !Cidr [!Ref CIDR, 6, 8]]
         AvailabilityZone: !Sub '${AWS::Region}d'
 
   PrivateNetworkAclAssociationD:
