@@ -98,7 +98,6 @@ Resources:
 
   AuroraInstanceC01:
     Type: AWS::Serverless::Application
-    Condition: IsNotDev
     DependsOn:
       - AuroraCluster
       - AuroraSubnetGroup
@@ -117,7 +116,6 @@ Resources:
 
   AuroraInstanceD01:
     Type: AWS::Serverless::Application
-    Condition: IsNotDev
     DependsOn:
       - AuroraCluster
       - AuroraSubnetGroup
